@@ -1,6 +1,9 @@
 Project_CodeNet.tar.gz
 Project_CodeNet/
-data/
 inputs/
 test/
 out/
+data/embedded/
+
+.env
+
