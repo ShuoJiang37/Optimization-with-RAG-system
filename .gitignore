@@ -4,6 +4,4 @@ inputs/
 test/
 out/
 data/embedded/
-
 .env
-
