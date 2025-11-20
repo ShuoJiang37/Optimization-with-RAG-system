@@ -1,30 +1,57 @@
 #!/bin/bash
 
-# Check for src directory argument
-if [ -z "$1" ]; then
-    echo "Usage: $0 <directory>"
+# Check for src, out, and data directory arguments
+if [[ -z "$1" || -z "$2" || -z "$3" ]]; then
+    echo "Usage: $0 <test> <input> <data>"
     exit 1
 fi
 
-SRC_DIR="$1"
+# Directory variables
+TEST_DIR="${1%/}"        # Directory containing problems to test
+INPUT_DIR="${2%/}"       # Directory containing problem inputs
+DATA_DIR="${3%/}"/csv    # Directory for CSV files
+OUT_DIR="out"            # Directory for compiled '.out' files
+DEBUG="$4"
 
-# Check if src directory is a valid directory
-if [ ! -d "$SRC_DIR" ]; then
-    echo "Error: '$SRC_DIR' is not a valid directory."
+# Check if test directory is a valid directory
+if [[ ! -d "$TEST_DIR" ]]; then
+    echo "Error: '$TEST_DIR' is not a valid directory."
     exit 1
 fi
 
-# Create directory for compiled programs
-OUT_DIR="./out"
-mkdir -p "$OUT_DIR"
+# Check if input directory is a valid directory
+if [[ ! -d "$INPUT_DIR" ]]; then
+    echo "Error: '$INPUT_DIR' is not a valid directory."
+    exit 1
+fi
 
-# Create directory for CSV data output
-DATA_DIR="./data"
-mkdir -p "$DATA_DIR"
+# Create directories if they do not exist
+mkdir -p "$DATA_DIR" "$OUT_DIR" 
 
-INPUT_FILE=    # To be set in main loop
+# Header for the CSV file
+CSV_HEADER="src,real,user,sys,I1,LLi,D1,LLd,LL"
+
+# Variables for benchmarking
+INPUT_FILE=    # Input for each problem, set in main loop
+DATA_FILE=     # Output for each problem, set in main loop
 TIMEOUT=1m     # Timeout for Cachegrind
 NTIMES=5       # Number of iterations for 'time'
+
+EXTENSION="c"
+
+# Function for DEBUG statements
+debug() {
+    [[ -n "$DEBUG" ]] && echo "$*"
+}
+
+# Function to compile the code
+compile() {
+    if [[ -n "$DEBUG" ]]; then
+        gcc -g "$1" -o "$2"
+    else 
+        gcc -g "$1" -o "$2" &> /dev/null
+    fi
+}
 
 # Function to benchmark the program using 'time' and 'Cachegrind'
 benchmark() {
@@ -44,53 +71,62 @@ benchmark() {
     fi 
 
     # Debug statements
-    # printf "tm_res:\n%s\n" "$tm_res"
-    # printf "tm_csv:\n%s\n" "$tm_csv"
-    # printf "cg_res:\n%s\n" "$cg_res"
-    # printf "cg_csv:\n%s\n" "$cg_csv"
+    if [[ -n "$DEBUG" ]]; then
+        printf "tm_res:\n%s\n" "$tm_res"
+        printf "tm_csv:\n%s\n" "$tm_csv"
+        printf "cg_res:\n%s\n" "$cg_res"
+        printf "cg_csv:\n%s\n" "$cg_csv"
+    fi
 
     echo "$2,$tm_csv,$cg_csv" >> $DATA_FILE
 }
 
 # Loop through files
-for file in "$SRC_DIR"/*; do
+for file in "$TEST_DIR"/*; do
     echo "Processing problems: $file"
+
+    # Extract file name
     INPUT_FILE=$(basename -- "$file")
 
     # Create CSV file output for each problem
     DATA_FILE="$DATA_DIR/${INPUT_FILE%.*}.csv"
-    echo "src,real,user,sys,I1,LLi,D1,LLd,LL,pred" > "$DATA_FILE"
+    echo "$CSV_HEADER" > "$DATA_FILE"
 
-    INPUT_FILE="inputs/$INPUT_FILE"
+    # Set input file to problem input in input directory
+    INPUT_FILE="$INPUT_DIR/$INPUT_FILE"
 
-    # Loop through each submission the problem
-    while IFS= read -r submission <&3; do
+    # Loop through each submission to the problem
+    # Input each file in fd 3 since benchmark closes fd 1 & fd 2
+    while IFS= read -r submission <&3 || [[ -n "$submission" ]]; do
         # Skip empty lines
-        [ -z "$submission" ] && continue
+        [[ -z "$submission" ]] && continue
 
         # Verify that the submission exists
-        if [ -f "$submission" ]; then
+        if [[ -f "$submission" ]]; then
+            # Extract submission name and extension
             filename=$(basename -- "$submission")
             extension="${filename##*.}"
             
-            if [ "$extension" == "c" ]; then
-                echo "Compiling: $filename"
+            # Run if the extension is what we are looking for
+            if [[ "$extension" == "$EXTENSION" ]]; then
+                debug "Compiling: $filename"
                 program="$OUT_DIR/${filename%.c}.out"
                 
-                if gcc -g "$submission" -o "$program"; then
-                    echo "Running benchmark on: ${filename%.c}.out"
-                    benchmark "$program" "$filename" || { echo "Benchmark failed"; exit 1; }
-                    echo "Finished running $filename"
+                # Attempt to compile the submission
+                if compile "$submission" "$program"; then
+                    debug "Running benchmark on: ${filename%.c}.out"
+                    benchmark "$program" "$filename"
+                    debug "Finished running $filename"
                 else
-                    echo "Compilation failed for $filename. Skipping."
+                    debug "Compilation failed for $filename. Skipping."
                 fi
             else
-                echo "Skipping non-C submission: $filename"
+                debug "Skipping non-$EXTENSION submission: $filename"
             fi
         else
-            echo "Submission not found: $submission"
+            debug "Submission not found: $submission"
         fi
     done 3< "$file"
 done
 
-echo "Benchmark complete"
+echo "Benchmark complete."

@@ -3,7 +3,6 @@ SEED=5204           # Seed for reproducible randomness
 
 mkdir -p "$OUT_DIR"
 
-
 # p02255 - Insertion Sort  
 INPUT="$OUT_DIR/p02255.txt"
 NUM_INT=100     # Number of integers to create

@@ -3,8 +3,6 @@
 SRC_DIR="./test"   # Directory containing submission file paths
 OUT_DIR="./src"    # Directory to copy files to
 
-mkdir -p "$OUT_DIR"
-
 # Create output directory if it doesn't exist
 mkdir -p "$OUT_DIR"
 
