@@ -14,7 +14,7 @@ for file in "$SRC_DIR"/*; do
     folder=$(basename -- "$file")
     target_dir="$OUT_DIR/${folder%.*}"
     mkdir -p "$target_dir"
-    
+
     # Read each submission path in the file
     while IFS= read -r file_path || [[ -n "$file_path" ]]; do
         # Skip empty lines

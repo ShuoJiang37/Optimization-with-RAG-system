@@ -42,7 +42,7 @@ benchmark:
 	./$(SCRIPTS)/benchmark.sh $(TEST) $(INPUT) $(DATA) $(DEBUG)
 
 inputs: scripts
-	./$(SCRIPTS)/generate_inputs.sh
+	./$(SCRIPTS)/generate_inputs.sh -d $(INPUT) -f
 
 # Project_CodeNet dataset recipies
 

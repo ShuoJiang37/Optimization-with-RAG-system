@@ -52,7 +52,7 @@ for entry in "$SRC_DIR"/*; do
             exit 1
         fi
 
-        # Exit if specified problem was found 
+        # Exit if specified problem was found
         [[ "$PROBLEM" == "$problem" ]] && break;
     fi
 done

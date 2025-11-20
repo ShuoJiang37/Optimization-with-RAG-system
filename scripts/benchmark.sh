@@ -26,7 +26,7 @@ if [[ ! -d "$INPUT_DIR" ]]; then
 fi
 
 # Create directories if they do not exist
-mkdir -p "$DATA_DIR" "$OUT_DIR" 
+mkdir -p "$DATA_DIR" "$OUT_DIR"
 
 # Header for the CSV file
 CSV_HEADER="src,real,user,sys,I1,LLi,D1,LLd,LL"
@@ -48,7 +48,7 @@ debug() {
 compile() {
     if [[ -n "$DEBUG" ]]; then
         gcc -g "$1" -o "$2"
-    else 
+    else
         gcc -g "$1" -o "$2" &> /dev/null
     fi
 }
@@ -62,13 +62,13 @@ benchmark() {
     tm_csv=$( awk -v N=$NTIMES '{ r+=$1; u+=$2; s+=$3 } END { printf "%.2f,%.2f,%.2f", r/N, u/N, s/N }' <<< "$tm_res" )
 
     # Run the program with 'Cachegrind'
-    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$program" <<< "$INPUT_FILE" 2>&1 ) # --branch-sim=yes 
+    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$program" <<< "$INPUT_FILE" 2>&1 ) # --branch-sim=yes
     if [ $? -eq 124 ]; then
-        echo "Cachegrind timed out"
+        debug "Cachegrind timed out"
         cg_csv=",,,,"
     else
         cg_csv=$( grep -o "rate:.*" <<< "$cg_res" | awk '/./ { split($2, mr, "%"); o = o (o ? "," : "") mr[1]; } END { print o }' )
-    fi 
+    fi
 
     # Debug statements
     if [[ -n "$DEBUG" ]]; then
@@ -92,6 +92,10 @@ for file in "$TEST_DIR"/*; do
     DATA_FILE="$DATA_DIR/${INPUT_FILE%.*}.csv"
     echo "$CSV_HEADER" > "$DATA_FILE"
 
+    # Create a directory in OUT_DIR for each problem
+    out_dir="$OUT_DIR/${INPUT_FILE%.*}"
+    mkdir -p "$out_dir"
+
     # Set input file to problem input in input directory
     INPUT_FILE="$INPUT_DIR/$INPUT_FILE"
 
@@ -106,12 +110,12 @@ for file in "$TEST_DIR"/*; do
             # Extract submission name and extension
             filename=$(basename -- "$submission")
             extension="${filename##*.}"
-            
+
             # Run if the extension is what we are looking for
             if [[ "$extension" == "$EXTENSION" ]]; then
                 debug "Compiling: $filename"
-                program="$OUT_DIR/${filename%.c}.out"
-                
+                program="$out_dir/${filename%.c}.out"
+
                 # Attempt to compile the submission
                 if compile "$submission" "$program"; then
                     debug "Running benchmark on: ${filename%.c}.out"
