@@ -2,10 +2,9 @@ ROOT := $(shell pwd)
 SCRIPTS := scripts
 DATASET := dataset
 INPUT := inputs
-DATA := data
+DATA := data/csv
 TEST := test
 P :=
-DEBUG :=
 
 .PHONY: help scripts \
 	submissions benchmark \
@@ -39,10 +38,10 @@ submissions: scripts
 	./$(SCRIPTS)/get_submissions.sh $(DATASET) $(TEST) p$(P)
 
 benchmark:
-	./$(SCRIPTS)/benchmark.sh $(TEST) $(INPUT) $(DATA) $(DEBUG)
+	./$(SCRIPTS)/benchmark.sh -d $(DATA) -i $(INPUT) -t $(TEST) $(FLAGS)
 
 inputs: scripts
-	./$(SCRIPTS)/generate_inputs.sh -d $(INPUT) -f
+	./$(SCRIPTS)/generate_inputs.sh -d $(INPUT) -f $(FLAGS)
 
 # Project_CodeNet dataset recipies
 
@@ -70,7 +69,7 @@ copy-dataset: scripts
 # Clean recipies
 
 clean:
-	rm -rf test/ out/ inputs/ 
+	rm -rf test/ out/ inputs/
 
 clean-data:
 	rm -rf data/csv

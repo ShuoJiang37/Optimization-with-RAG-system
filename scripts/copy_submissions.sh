@@ -16,7 +16,7 @@ for file in "$SRC_DIR"/*; do
     mkdir -p "$target_dir"
 
     # Read each submission path in the file
-    while IFS= read -r file_path || [[ -n "$file_path" ]]; do
+    while IFS= read -r file_path; do
         # Skip empty lines
         [ -z "$file_path" ] && continue
 

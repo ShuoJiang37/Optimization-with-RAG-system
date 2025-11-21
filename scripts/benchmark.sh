@@ -1,21 +1,23 @@
 #!/bin/bash
 
-# Check for src, out, and data directory arguments
-if [[ -z "$1" || -z "$2" || -z "$3" ]]; then
-    echo "Usage: $0 <test> <input> <data>"
-    exit 1
-fi
+# Get command line options
+while getopts "d:i:t:o:beqvx" opt; do
+    case "$opt" in
+        d) DATA_DIR="${OPTARG%/}" ;;
+        i) INPUT_DIR="${OPTARG%/}" ;;
+        t) TEST_DIR="${OPTARG%/}" ;;
+        o) OUT_DIR="${OPTARG%/}" ;;
+        b) BENCH=true ;;
+        e) ERROR=true ;;
+        q) QUIET=true ;;
+        v) VERBOSE=true ;;
+        x) DEBUG=true ;;
+    esac
+done
 
-# Directory variables
-TEST_DIR="${1%/}"        # Directory containing problems to test
-INPUT_DIR="${2%/}"       # Directory containing problem inputs
-DATA_DIR="${3%/}"/csv    # Directory for CSV files
-OUT_DIR="out"            # Directory for compiled '.out' files
-DEBUG="$4"
-
-# Check if test directory is a valid directory
-if [[ ! -d "$TEST_DIR" ]]; then
-    echo "Error: '$TEST_DIR' is not a valid directory."
+# Check for data, input, and test directory arguments
+if [[ -z "$DATA_DIR" || -z "$INPUT_DIR" || -z "$TEST_DIR" ]]; then
+    echo "Usage: $0 -d <data_dir> -i <input_dir> -t <test_dir> [-o out_dir] [-b] [-e] [-q] [-v] [-x]"
     exit 1
 fi
 
@@ -23,6 +25,17 @@ fi
 if [[ ! -d "$INPUT_DIR" ]]; then
     echo "Error: '$INPUT_DIR' is not a valid directory."
     exit 1
+fi
+
+# Check if test directory is a valid directory
+if [[ ! -d "$TEST_DIR" ]]; then
+    echo "Error: '$TEST_DIR' is not a valid directory."
+    exit 1
+fi
+
+# Set directory for output files if not specified
+if [[ -z "$OUT_DIR" ]]; then
+    OUT_DIR="out"
 fi
 
 # Create directories if they do not exist
@@ -39,18 +52,44 @@ NTIMES=5       # Number of iterations for 'time'
 
 EXTENSION="c"
 
-# Function for DEBUG statements
-debug() {
-    [[ -n "$DEBUG" ]] && echo "$*"
+# Redirect output to /dev/null is QUIET is set
+if [[ -n "$QUIET" ]]; then
+    exec >/dev/null 2>&1
+fi
+
+# Redirect output to debug file if DEBUG is set
+if [[ -n "$DEBUG" ]]; then
+    # Create a debug output file
+    DEBUGFILE="benchmark_out.txt"
+    : > "$DEBUGFILE"
+    exec >"$DEBUGFILE" 2>&1
+fi
+
+# Function for info statements
+info() {
+    [[ -n "$VERBOSE" ]] && echo "  (I) $*"
+}
+
+# Function for warn statements
+warn() {
+    echo "  (W) $*"
 }
 
 # Function to compile the code
 compile() {
-    if [[ -n "$DEBUG" ]]; then
-        gcc -g "$1" -o "$2"
+    local out exit
+
+    # Check if '-e' flag is set
+    if [[ -n "$ERROR" ]]; then
+        out=$( gcc -g "$1" -o "$2" 2>&1 )
+        exit=$?
+        [[ -n "$out" ]] && warn "$out"
     else
         gcc -g "$1" -o "$2" &> /dev/null
+        exit=$?
     fi
+
+    return "$exit"
 }
 
 # Function to benchmark the program using 'time' and 'Cachegrind'
@@ -64,14 +103,14 @@ benchmark() {
     # Run the program with 'Cachegrind'
     cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$program" <<< "$INPUT_FILE" 2>&1 ) # --branch-sim=yes
     if [ $? -eq 124 ]; then
-        debug "Cachegrind timed out"
+        warn "Cachegrind timed out"
         cg_csv=",,,,"
     else
         cg_csv=$( grep -o "rate:.*" <<< "$cg_res" | awk '/./ { split($2, mr, "%"); o = o (o ? "," : "") mr[1]; } END { print o }' )
     fi
 
     # Debug statements
-    if [[ -n "$DEBUG" ]]; then
+    if [[ -n "$BENCH" ]]; then
         printf "tm_res:\n%s\n" "$tm_res"
         printf "tm_csv:\n%s\n" "$tm_csv"
         printf "cg_res:\n%s\n" "$cg_res"
@@ -101,7 +140,7 @@ for file in "$TEST_DIR"/*; do
 
     # Loop through each submission to the problem
     # Input each file in fd 3 since benchmark closes fd 1 & fd 2
-    while IFS= read -r submission <&3 || [[ -n "$submission" ]]; do
+    while IFS= read -r submission <&3; do
         # Skip empty lines
         [[ -z "$submission" ]] && continue
 
@@ -113,22 +152,22 @@ for file in "$TEST_DIR"/*; do
 
             # Run if the extension is what we are looking for
             if [[ "$extension" == "$EXTENSION" ]]; then
-                debug "Compiling: $filename"
+                info "Compiling: $filename"
                 program="$out_dir/${filename%.c}.out"
 
                 # Attempt to compile the submission
                 if compile "$submission" "$program"; then
-                    debug "Running benchmark on: ${filename%.c}.out"
+                    info "Running benchmark on: ${filename%.c}.out"
                     benchmark "$program" "$filename"
-                    debug "Finished running $filename"
+                    info "Finished running $filename"
                 else
-                    debug "Compilation failed for $filename. Skipping."
+                    warn "Failed to compile submission: $filename"
                 fi
             else
-                debug "Skipping non-$EXTENSION submission: $filename"
+                warn "Skipping non-$EXTENSION submission: $filename"
             fi
         else
-            debug "Submission not found: $submission"
+            warn "Submission not found: $submission"
         fi
     done 3< "$file"
 done
