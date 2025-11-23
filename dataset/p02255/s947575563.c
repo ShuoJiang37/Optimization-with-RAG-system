@@ -1,1 +1,0 @@
-a[100],v,j,n;p(){for(v=0;v<n;printf("%d%s",a[v++],v-n+1?" ":"\n"));}main(i){scanf("%d",&n);for(;j<n;scanf("%d",&a[j++]));p();for(;i<n;){j=i-1;v=a[i++];for(;a[j]>v;a[j+1]=a[j--]);a[j+1]=v;p();}exit(0);}
