@@ -1,0 +1,17 @@
+{
+    "name": "OPT-WITH-RAG",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "runArgs": [
+        "--cap-add=PERFMON"
+    ],
+    // "customizations": {
+    //     "vscode": {
+    //         "settings": {
+    //             "files.trimTrailingWhitespace": true,
+    //             "files.insertFinalNewline": true
+    //         }
+    //     }
+    // }
+}
