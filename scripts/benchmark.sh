@@ -100,8 +100,8 @@ benchmark() {
     tm_res=$( for _ in $(seq 1 $NTIMES); do { /usr/bin/time -f "%e %U %S" "$1" < "$INPUT_FILE" 1> /dev/null; } 2>&1; done )
     tm_csv=$( awk -v N=$NTIMES '{ r+=$1; u+=$2; s+=$3 } END { printf "%.2f,%.2f,%.2f", r/N, u/N, s/N }' <<< "$tm_res" )
 
-    # Run the program with 'Cachegrind'
-    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$program" <<< "$INPUT_FILE" 2>&1 ) # --branch-sim=yes
+    # Run the program with 'Cachegrind' , changed prgram argument with 1 and went from <<< to a singular < 
+    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$1" < "$INPUT_FILE" 2>&1 ) # --branch-sim=yes
     if [ $? -eq 124 ]; then
         warn "Cachegrind timed out"
         cg_csv=",,,,"
