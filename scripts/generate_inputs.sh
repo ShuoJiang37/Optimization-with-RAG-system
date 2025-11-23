@@ -1,130 +1,77 @@
-OUT_DIR="inputs"    # Output directory for input text files
-SEED=5204           # Seed for reproducible randomness
+#!/bin/bash
 
+# Seed for reproducible randomness
+SEED=5204
+
+# Get command line options
+while getopts "d:p:fq" opt; do
+    case "$opt" in
+        d) OUT_DIR="${OPTARG%/}" ;;
+        p) PROBLEM="$OPTARG" ;;
+        f) FORCE=true ;;
+        q) QUIET=true ;;
+    esac
+done
+
+# Check for out directory argument
+if [[ -z "$OUT_DIR" ]]; then
+    echo "Usage: $0 -d <dir> [-p#####] [-f] [-q]"
+    exit 1
+fi
+
+# Create output directory if it doesn't exist
 mkdir -p "$OUT_DIR"
 
+# Function for printing info statements
+info() {
+    [[ -n "$QUIET" ]] || echo "$*"
+}
 
-# p02255 - Insertion Sort  
-INPUT="$OUT_DIR/p02255.txt"
-NUM_INT=100     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers, default max
+# Function for creating random number inputs
+# Usage: generate_numbers <p> <n> <min> <max>
+function generate_numbers() {
+    local p="$1"
+    local n="$2"
+    local min="$3"
+    local max="$4"
 
-if [ ! -f "$P02255" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
+    local outfile="$OUT_DIR/$p.txt"
 
+    # Generate specified problem
+    if [[ -z "$PROBLEM" || "p$PROBLEM" == "$p" ]]; then
+        # Generate inputs if outfile doesn't already exist
+        if [[ -n "$FORCE" || ! -f "$outfile" ]]; then
+            echo "$n" > "$outfile"
+            # Generate random usign 'awk' and SEED for reproducibility
+            awk -v n="$n" -v min="$min" -v max="$max" -v seed="$SEED" '
+                BEGIN {
+                    srand(SEED)
+                    for (i = 0; i <  n; i++) {
+                        print int(min + rand() * (max - min))
+                    }
+                }
+            ' >> "$outfile"
+            info "'$outfile' generated with seed: '$SEED'."
+        else
+            info "'$outfile' already exists. Skipping generation."
+        fi
+    fi
+}
 
-# p02259 - Bubble Sort 
-INPUT="$OUT_DIR/p02259.txt"
-NUM_INT=100     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers, default max
+# p02255 - Insertion Sort
+generate_numbers "p02255" 100 0 100
 
-if [ ! -f "$P02259" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
+# p02259 - Bubble Sort
+generate_numbers "p02259" 100 0 100
 
 # p02260 - Selection Sort
-INPUT="$OUT_DIR/p02260.txt"
-NUM_INT=100     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers, default max
-
-if [ ! -f "$P02260" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
-
-# p02261 - Stable Sort
-INPUT="$OUT_DIR/p02261.txt"
-NUM_INT=36     # Number of cards to create
-MAX_INT=1000000    # Maximum value for integers, default max
-
-if [ ! -f "$P02261" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
-
-# p02262 - Shell Sort
-INPUT="$OUT_DIR/p02262.txt" # Has an additional constraint regarding arrays, how to tackle?
-NUM_INT=1000000    # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers
-
-if [ ! -f "$P02262" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
+generate_numbers "p02260" 100 0 100
 
 # p02272 - Merge Sort
-INPUT="$OUT_DIR/p02272.txt"
-NUM_INT=500000     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers
-
-if [ ! -f "$P02272" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
+generate_numbers "p02272" 500000 0 2000000
 
 # p02275 - Counting Sort
-INPUT="$OUT_DIR/p02275.txt" #Had to change the max integer for this one since the constraint was larger than the default, also have to add the array constraint
-NUM_INT=2000000     # Number of integers to create
-MAX_INT=2000000    # Maximum value for integers
-
-if [ ! -f "$P02275" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
+generate_numbers "p02275" 2000000 0 10000
 
 # p02277 - Quick Sort
-INPUT="$OUT_DIR/p02277.txt" # Have to add array constraint / way to avoid same input for cards
-NUM_INT=100000     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers
-
-if [ ! -f "$P02277" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
-
-
-# p02278 - Minimum Cost Sort
-INPUT="$OUT_DIR/p02278.txt" # Have to add array constraint / making sure arrays aren't the same
-NUM_INT=1000     # Number of integers to create
-MAX_INT=1000000    # Maximum value for integers
-
-if [ ! -f "$P02278" ]; then
-    echo "$NUM_INT" > "$INPUT"
-    awk -v seed="$SEED" -v n="$NUM_INT" -v max="$MAX_INT" 'BEGIN { srand(seed); for(i=1;i<=n;i++) print int(rand()*max) }' >> "$INPUT"
-    echo "'$INPUT' generated with seed: '$SEED'."
-else
-    echo "'$INPUT' already exists. Skipping generation."
-fi
+generate_numbers "p02277" 100000 1 2000000

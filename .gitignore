@@ -1,6 +1,9 @@
 Project_CodeNet.tar.gz
 Project_CodeNet/
-data/
+.env/
+data/csv/
+data/embedded/
 inputs/
 test/
 out/
+benchmark_out.txt

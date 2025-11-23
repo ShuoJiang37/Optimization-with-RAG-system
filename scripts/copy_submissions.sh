@@ -3,8 +3,6 @@
 SRC_DIR="./test"   # Directory containing submission file paths
 OUT_DIR="./src"    # Directory to copy files to
 
-mkdir -p "$OUT_DIR"
-
 # Create output directory if it doesn't exist
 mkdir -p "$OUT_DIR"
 
@@ -16,9 +14,9 @@ for file in "$SRC_DIR"/*; do
     folder=$(basename -- "$file")
     target_dir="$OUT_DIR/${folder%.*}"
     mkdir -p "$target_dir"
-    
+
     # Read each submission path in the file
-    while IFS= read -r file_path || [[ -n "$file_path" ]]; do
+    while IFS= read -r file_path; do
         # Skip empty lines
         [ -z "$file_path" ] && continue
 
