@@ -42,10 +42,10 @@ function generate_numbers() {
         # Generate inputs if outfile doesn't already exist
         if [[ -n "$FORCE" || ! -f "$outfile" ]]; then
             echo "$n" > "$outfile"
-            # Generate random usign 'awk' and SEED for reproducibility
+            # Generate random usign 'awk' and SEED for reproducibility # changed srand(SEED) to srand(seed)
             awk -v n="$n" -v min="$min" -v max="$max" -v seed="$SEED" '
                 BEGIN {
-                    srand(SEED)
+                    srand(seed)  
                     for (i = 0; i <  n; i++) {
                         print int(min + rand() * (max - min))
                     }
