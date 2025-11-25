@@ -38,7 +38,7 @@ submissions: scripts
 	./$(SCRIPTS)/get_submissions.sh $(DATASET) $(TEST) p$(P)
 
 benchmark:
-	./$(SCRIPTS)/benchmark.sh -d $(DATA) -i $(INPUT) -t $(TEST) $(FLAGS)
+	./$(SCRIPTS)/benchmark.sh -d $(DATA) -i $(INPUT) -t $(TEST) -x $(FLAGS)
 
 inputs: scripts
 	./$(SCRIPTS)/generate_inputs.sh -d $(INPUT) -f $(FLAGS)
@@ -69,7 +69,7 @@ copy-dataset: scripts
 # Clean recipies
 
 clean:
-	rm -rf test/ out/ inputs/
+	rm -rf test/ out/ inputs/ benchmark_out.txt
 
 clean-data:
 	rm -rf data/csv

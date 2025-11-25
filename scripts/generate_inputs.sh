@@ -42,7 +42,7 @@ function generate_numbers() {
         # Generate inputs if outfile doesn't already exist
         if [[ -n "$FORCE" || ! -f "$outfile" ]]; then
             echo "$n" > "$outfile"
-            # Generate random usign 'awk' and SEED for reproducibility # changed srand(SEED) to srand(seed)
+            # Generate random usign 'awk' and SEED for reproducibility
             awk -v n="$n" -v min="$min" -v max="$max" -v seed="$SEED" '
                 BEGIN {
                     srand(seed)  
@@ -59,13 +59,13 @@ function generate_numbers() {
 }
 
 # p02255 - Insertion Sort
-generate_numbers "p02255" 100 0 100
+# generate_numbers "p02255" 100 0 100
 
 # p02259 - Bubble Sort
-generate_numbers "p02259" 100 0 100
+# generate_numbers "p02259" 100 0 100
 
 # p02260 - Selection Sort
-generate_numbers "p02260" 100 0 100
+# generate_numbers "p02260" 100 0 100
 
 # p02272 - Merge Sort
 generate_numbers "p02272" 500000 0 2000000
@@ -75,3 +75,6 @@ generate_numbers "p02275" 2000000 0 10000
 
 # p02277 - Quick Sort
 generate_numbers "p02277" 100000 1 2000000
+
+# nlogn sorting algorithms
+generate_numbers "sort" 1000000 0 2000000

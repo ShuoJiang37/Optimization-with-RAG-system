@@ -41,17 +41,6 @@ fi
 # Create directories if they do not exist
 mkdir -p "$DATA_DIR" "$OUT_DIR"
 
-# Header for the CSV file
-CSV_HEADER="src,real,user,sys,I1,LLi,D1,LLd,LL"
-
-# Variables for benchmarking
-INPUT_FILE=    # Input for each problem, set in main loop
-DATA_FILE=     # Output for each problem, set in main loop
-TIMEOUT=1m     # Timeout for Cachegrind
-NTIMES=5       # Number of iterations for 'time'
-
-EXTENSION="c"
-
 # Redirect output to /dev/null is QUIET is set
 if [[ -n "$QUIET" ]]; then
     exec >/dev/null 2>&1
@@ -92,21 +81,32 @@ compile() {
     return "$exit"
 }
 
+# Header for the CSV file
+CSV_HEADER="src|real|user|sys|Irefs|I1|LLi|Drefs|D1|LLd|LLrefs|LL|branch|mispred"
+
+# Variables for benchmarking
+INPUT_FILE=    # Input for each problem, set in main loop
+DATA_FILE=     # Output for each problem, set in main loop
+TIMEOUT=2m     # Timeout for Cachegrind
+NTIMES=5       # Number of iterations for 'time'
+
+EXTENSION="c"
+
 # Function to benchmark the program using 'time' and 'Cachegrind'
 benchmark() {
     local tm_res tm_csv cg_res cg_csv
 
     # Run the program with GNU 'time'
     tm_res=$( for _ in $(seq 1 $NTIMES); do { /usr/bin/time -f "%e %U %S" "$1" < "$INPUT_FILE" 1> /dev/null; } 2>&1; done )
-    tm_csv=$( awk -v N=$NTIMES '{ r+=$1; u+=$2; s+=$3 } END { printf "%.2f,%.2f,%.2f", r/N, u/N, s/N }' <<< "$tm_res" )
+    tm_csv=$( awk -v N=$NTIMES '{ r+=$1; u+=$2; s+=$3 } END { printf "%.2f|%.2f|%.2f", r/N, u/N, s/N }' <<< "$tm_res" )
 
-    # Run the program with 'Cachegrind' , changed prgram argument with 1 and went from <<< to a singular < 
-    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --cachegrind-out-file=/dev/null "$1" < "$INPUT_FILE" 2>&1 ) # --branch-sim=yes
-    if [ $? -eq 124 ]; then
+    # Run the program with 'Cachegrind'
+    cg_res=$( timeout "$TIMEOUT" valgrind --tool=cachegrind --cache-sim=yes --branch-sim=yes --cachegrind-out-file=/dev/null "$1" < "$INPUT_FILE" 2>&1 )
+    if [[ $? -eq 124 ]]; then
         warn "Cachegrind timed out"
-        cg_csv=",,,,"
+        cg_csv="||||||||"
     else
-        cg_csv=$( grep -o "rate:.*" <<< "$cg_res" | awk '/./ { split($2, mr, "%"); o = o (o ? "," : "") mr[1]; } END { print o }' )
+        cg_csv=$( grep -oE "refs:.*|rate:.*|Branches:.*" <<< "$cg_res" | awk '/./ { split($2, mr, "%"); o = o (o ? "|" : "") mr[1]; } END { print o }' )
     fi
 
     # Debug statements
@@ -117,7 +117,7 @@ benchmark() {
         printf "cg_csv:\n%s\n" "$cg_csv"
     fi
 
-    echo "$2,$tm_csv,$cg_csv" >> $DATA_FILE
+    echo "$2|$tm_csv|$cg_csv" >> $DATA_FILE
 }
 
 # Loop through files
