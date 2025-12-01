@@ -1,44 +1,48 @@
 from openai import OpenAI
-import pandas as pd
-import os 
+import os
+import json
 
-source = "./data/filtered"
-destination = "./data/embedded/"
-dimension = 256
+SOURCE = "./dataset/"
+DESTINATION = "./embedded/"
 
-files = os.listdir(source)
-
-print("Embedding files from: ", source)
-print("Reducing embedding dimensionality to: ", dimension)
+print("Embedding files from:", SOURCE)
+print("Saving embeddings to:", DESTINATION)
 
 client = OpenAI()
-output_rows = []
 
-for file_name in files:
-    full_path = os.path.join(source, file_name)
-    print("Embedding: ", full_path)
+for root, dirs, file_list in os.walk(SOURCE):
+    for filename in file_list:
+        if not filename.lower().endswith(".c"):
+            continue
+        
+        full_path = os.path.join(root, filename)
+        rel_path = os.path.relpath(full_path, SOURCE)
+        file_out_dir = os.path.join(DESTINATION, os.path.dirname(rel_path))
+        file_out_path = os.path.join(file_out_dir, filename + ".json")
 
-    with open(full_path, "r") as f:
-        code = f.read()
+        os.makedirs(file_out_dir, exist_ok=True)
 
-    try:
-        response = client.embeddings.create(
-            model="text-embedding-3-small",
-            input=code,
-            dimensions=dimension
-        )
-    except Exception as e:
-        print("Error: ", file_name, "-", e)
-        continue  
+        print("Embedding:", rel_path)
 
-    embedding = response.data[0].embedding
+        with open(full_path, "r", encoding="utf-8", errors="replace") as f:
+            code = f.read()
 
-    output_rows.append({
-        "file": file_name,
-        "embedding": embedding
-    })
+        try:
+            response = client.embeddings.create(
+                model="text-embedding-3-small",
+                input=code,
+            )
+        except Exception as e:
+            print("Error embedding", filename, "-", e)
+            continue
 
-df = pd.DataFrame(output_rows)
-df.to_csv(f"{destination}c_files_embedded.csv", index=False)
+        embedding = response.data[0].embedding
 
-print(f"Results have been saved to {destination}c_files_embedded.csv")
+        with open(file_out_path, "w", encoding="utf-8") as f:
+            json.dump({
+                "file": filename,
+                "path": rel_path,
+                "embedding": embedding
+            }, f)
+
+print("All embeddings saved to:", DESTINATION)
