@@ -69,7 +69,7 @@ copy-dataset: scripts
 # Clean recipies
 
 clean:
-	rm -rf test/ out/ inputs/ benchmark_out.txt
+	rm -rf test/ out/ inputs/ data/csv/ benchmark_out.txt
 
 clean-data:
 	rm -rf data/csv
@@ -81,6 +81,11 @@ clean-codenet:
 clean-dataset:
 	@echo "Confirm: remove local dataset?"
 	@rm -rI dataset/
+
+# Python Environment
+
+venv:
+	@python -m venv .venv
 
 # Other utilities
 
