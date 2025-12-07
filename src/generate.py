@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import traceback #added to catch error
 from openai import OpenAI
 from numpy.typing import NDArray
 
@@ -49,6 +50,9 @@ def cosine_similarity(a: Vector, b: Vector) -> float:
 
 
 def query_vector_db(text_query: str, top_k: int = 5) -> list[Score]:
+    # Added to give a better description of an error with the nothing in the database
+    if VECTORS is None or METADATA is None:
+        raise RuntimeError("Vector DB not loaded")
     # Embed the query
     q_vec: Vector = embed_query(text_query)
 
@@ -95,11 +99,14 @@ def build_prompt(prompt: str, retrieved: list[Score]) -> str:
 
 def main() -> None:
     # Load the vector database
+    global VECTORS, METADATA #Added this as an issue was faced where these variables weren't updating globally causing issues
     VECTORS, METADATA = load_db()
 
+    print("Loaded VECTORS shape:", VECTORS.shape)
+    print("Loaded METADATA entries:", len(METADATA)) #Added these two print statments just to check
     # Obtain user prompt
-    user_prompt = "Generate a efficient merge sort implementation for a modern Intel CPU."
-
+    # user_prompt = "Generate a efficient merge sort implementation for a modern Intel CPU."
+    user_prompt = input("Enter your optimization request: ") # Added this and commented out the other user prompt, can comment this and uncomment the other if needed
     try:
         # Query RAG system and build prompt
         retrieved: list[Score] = query_vector_db(user_prompt, top_k=TOP_K)
@@ -113,7 +120,7 @@ def main() -> None:
         print(response.output_text)
     except Exception as e:
         print(f"Error: {e}")
-
+        traceback.print_exc() # added to catch error
 
 if __name__ == "__main__":
     main()

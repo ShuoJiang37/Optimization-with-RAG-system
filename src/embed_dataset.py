@@ -66,7 +66,9 @@ def walk_filtered_directory() -> Iterator[Entry]:
                     # Read the source code
                     with open(impl_path, "r") as src:
                         code_text = src.read()
-
+                    # Added; ensures machine_md is always defined
+                    if 'machine_md' not in locals() or machine_md is None:
+                        machine_md = {}
                     # Return RAG Vector Schema
                     yield {
                         "machine": machine,
