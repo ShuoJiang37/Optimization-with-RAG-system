@@ -13,10 +13,12 @@ DATASET = "dataset"
 OUTPUT_DIR = "embedded"
 EMBED_MODEL = "text-embedding-3-small"
 
-MDEntry = dict[str, str | dict[str, str]]
+# Typedefs
+Entry = dict[str, str | dict[str, str]]
 
 
 def read_machine_metadata(metadata_path: str) -> dict[str, str]:
+    # Read in metadata from a file of k:v pairs seperated by newlines
     machine_md: dict[str, str] = {}
     with open(metadata_path, "r") as f:
         for line in f:
@@ -27,7 +29,7 @@ def read_machine_metadata(metadata_path: str) -> dict[str, str]:
     return machine_md
 
 
-def walk_filtered_directory() -> Iterator[MDEntry]:
+def walk_filtered_directory() -> Iterator[Entry]:
     # Iterate through ever machine in dataset
     for machine in os.listdir(ROOT):
         # Get directory path for the machine
@@ -76,12 +78,13 @@ def walk_filtered_directory() -> Iterator[MDEntry]:
 
 def build_embedding_text(machine_md: dict[str, str], algorithm: str, code_text: str) -> str:
     # Join the dictionary as an unordered list
-    machine_str = "\n* ".join([f"{k}: {v}" for k, v in machine_md.items()])
+    machine_str = "\n".join([f"{k}: {v}" for k, v in machine_md.items()])
     return "\n".join([
-        f"# Machine Architecture:\n* {machine_str}",
-        f"# Algorithm:\n{algorithm}",
-        f"# C Code:\n```c\n{code_text}\n```"
+        f"Machine Architecture:\n{machine_str}",
+        f"Algorithm:\n{algorithm}",
+        f"C Code:\n{code_text}"
     ])
+
 
 def embed_text(text: str) -> list[float]:
     # Create an embedding using OpenAI model
@@ -102,7 +105,7 @@ def main() -> None:
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
     vectors: list[list[float]] = []
-    metadata_entries: list[MDEntry] = []
+    metadata_entries: list[Entry] = []
 
     print("Scanning dataset...")
 
@@ -121,7 +124,7 @@ def main() -> None:
         try:
             vector: list[float] = embed_text(emb_text)
         except Exception as e:
-            print(f"Error embedding {entry['algorithm']} on {entry['machine']}")
+            print(f"Error ({entry['algorithm']} on {entry['machine']}): {e}")
             continue
 
         # Append embedding and metadata to list

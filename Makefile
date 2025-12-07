@@ -101,6 +101,9 @@ clean-venv:
 embedding:
 	@source .venv/bin/activate && python3 src/embed_dataset.py
 
+generate:
+	@source .venv/bin/activate && python3 src/generate.py
+
 # tmux commands
 
 tmux:
