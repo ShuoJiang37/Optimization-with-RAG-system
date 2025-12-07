@@ -1,0 +1,6 @@
+cpu: Intel i7-12700
+l1i_cache: 512 KiB (12)
+l1d_cache: 512 KiB (12)
+l2_cache: 12 MiB (9)
+l3_cache: 25 MiB (1)
+compiler_flags: -g

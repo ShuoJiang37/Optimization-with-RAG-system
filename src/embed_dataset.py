@@ -2,86 +2,107 @@ import os
 import json
 import numpy as np
 from openai import OpenAI
-from typing import Dict, Iterator
+from typing import Iterator
 
 # Set `OPENAI_API_KEY` environment variable
 client = OpenAI()
 
+# Global variables
 ROOT = "filtered"
+DATASET = "dataset"
 OUTPUT_DIR = "embedded"
 EMBED_MODEL = "text-embedding-3-small"
 
-def walk_filtered_directory() -> Iterator[Dict[str, str]]:
+MDEntry = dict[str, str | dict[str, str]]
+
+
+def read_machine_metadata(metadata_path: str) -> dict[str, str]:
+    machine_md: dict[str, str] = {}
+    with open(metadata_path, "r") as f:
+        for line in f:
+            if ":" in line:
+                key, val = line.split(":", 1)
+                machine_md[key.strip().lower()] = val.strip()
+
+    return machine_md
+
+
+def walk_filtered_directory() -> Iterator[MDEntry]:
     # Iterate through ever machine in dataset
     for machine in os.listdir(ROOT):
         # Get directory path for the machine
         machine_path = os.path.join(ROOT, machine)
         if not os.path.isdir(machine_path):
             continue
-
-        # Get the metadata of the machine
-        metadata_path = os.path.join(path, "metadata.txt")
-        if os.path.exists(metadata_path):
-            continue
-
-        machine_md = {}
-        with open(metadata_path, "r") as f:
-            for line in f:
-                if ":" in line:
-                    key, val = line.split(":", 1)
-                    machine_md[key.strip().lower()] = val.strip()
-
         # Iterate through every algorithm tested on the machine
-        for algorithm in os.listdir(machine_path):
-            # Get directory path for each algorithm
-            algorithm_path = os.path.join(machine_path, algorithm)
-            if not os.path.isdir(algorithm_path):
+        for file in os.listdir(machine_path):
+            name, ext = os.path.splitext(file)
+            if ext.lower() != ".txt":
                 continue
 
-            # Iterate through every submission
-            for file in os.listdir(algorithm_path):
-                if file.endswith(".c"):
-                    with open(os.path.join(algorithm_path, file), "r") as f:
-                        code_text = f.read()
+            # Check if it is a metadata file
+            if name.lower() == "metadata":
+                metadata_path = os.path.join(machine_path, file)
+                # Get the metadata of the machine
+                machine_md: dict[str, str] = read_machine_metadata(metadata_path)
+
+            # Check if it is an algorithm file
+            if ":" not in name:
+                continue
+
+            # Iterate through every implementation
+            problem, algorithm = name.split(":", 1)
+            with open(os.path.join(machine_path, file), "r") as f:
+                for impl in f:
+                    # Verify source code exists in dataset
+                    impl_path = os.path.join(DATASET, problem, impl.strip())
+                    print(impl_path)
+                    if not os.path.exists(impl_path):
+                        print("here")
+                        continue
+
+                    # Read the source code
+                    with open(impl_path, "r") as src:
+                        code_text = src.read()
 
                     # Return RAG Vector Schema
                     yield {
                         "machine": machine,
                         "machine_metadata": machine_md,
                         "algorithm": algorithm,
-                        "filename": file,
                         "code": code_text
                     }
 
 
-def build_embedding_text(machine_md: str, algorithm: str, code_text: str) -> str:
-    # Join the dictionary seperated by newlines
-    machine_str = "\n".join([f"{k}: {v}" for k, v in machine_md.items()])
-    return f"Machine Architecture: {machine_str}\nAlgorithm: {algorithm}\nC Code: {code_text} """
+def build_embedding_text(machine_md: dict[str, str], algorithm: str, code_text: str) -> str:
+    # Join the dictionary as an unordered list
+    machine_str = "\n* ".join([f"{k}: {v}" for k, v in machine_md.items()])
+    return "\n".join([
+        f"# Machine Architecture:\n* {machine_str}",
+        f"# Algorithm:\n{algorithm}",
+        f"# C Code:\n```c\n{code_text}\n```"
+    ])
 
-
-def embed_text(text: str) -> []:
+def embed_text(text: str) -> list[float]:
     # Create an embedding using OpenAI model
-    # emb = client.embeddings.create(
-    #     model=EMBED_MODEL,
-    #     input=text
-    # )
-    # return emb.data[0].embedding
-    pass
+    emb = client.embeddings.create(
+        model=EMBED_MODEL,
+        input=text
+    )
+    return emb.data[0].embedding
 
 
-def main():
-
-    # Check if filtered dataset directory exists
-    if not os.path.isdir(ROOT):
+def main() -> None:
+    # Check if filtered and dataset directory exists
+    if not os.path.isdir(ROOT) or not os.path.isdir(DATASET):
         print("Filtered dataset directory does not exist")
         return
 
     # Create output directory if it doesn't exist
     os.makedirs(OUTPUT_DIR, exist_ok=True)
 
-    vectors = []
-    metadata_entries = []
+    vectors: list[list[float]] = []
+    metadata_entries: list[MDEntry] = []
 
     print("Scanning dataset...")
 
@@ -98,7 +119,7 @@ def main():
 
         # Generate an vector embedding
         try:
-            vector = embed_text(emb_text)
+            vector: list[float] = embed_text(emb_text)
         except Exception as e:
             print(f"Error embedding {entry['algorithm']} on {entry['machine']}")
             continue
@@ -118,8 +139,8 @@ def main():
         for md in metadata_entries:
             f.write(json.dumps(md) + "\n")
 
-    # Save id map as a json
-    with open(os.path.join(OUTPUT_DIR, "id_map.json"), "w") as f:
+    # Save count as a json
+    with open(os.path.join(OUTPUT_DIR, "info.json"), "w") as f:
         json.dump({"count": len(vectors)}, f, indent=4)
 
     print("Vector DB stored in:", OUTPUT_DIR)

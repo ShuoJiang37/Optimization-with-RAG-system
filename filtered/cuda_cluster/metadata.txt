@@ -1,0 +1,6 @@
+cpu: Intel Gold 6148
+l1i_cache: 1.3 MiB (40)
+l1d_cache: 1.3 MiB (40)
+l2_cache: 40 MiB (40)
+l3_cache: 55 MiB (2)
+compiler_flags: -g

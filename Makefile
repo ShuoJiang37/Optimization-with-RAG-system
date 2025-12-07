@@ -1,3 +1,5 @@
+SHELL := /bin/bash
+
 ROOT := $(shell pwd)
 SCRIPTS := scripts
 DATASET := dataset
@@ -11,7 +13,8 @@ P :=
 	extract-dataset copy-dataset \
 	get-codenet extract-codenet verify-codenet \
 	clean-codenet clean-dataset clean \
-	zip tmux attach detach
+	venv clean-venv \
+	tmux attach detach
 
 help:
 	@echo "Usage: make <recipe> [-p=number]"
@@ -84,13 +87,21 @@ clean-dataset:
 
 # Python Environment
 
-venv:
+.venv:
 	@python -m venv .venv
 
-# Other utilities
+venv: .venv
+	@source .venv/bin/activate && pip install numpy openai
 
-zip:
-	@echo "Not done yet lol"
+clean-venv:
+	rm -rf .venv/
+
+# RAG recipies
+
+embedding:
+	@source .venv/bin/activate && python3 src/embed_dataset.py
+
+# tmux commands
 
 tmux:
 	@tmux new -s RAG

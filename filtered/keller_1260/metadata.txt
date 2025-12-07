@@ -1,0 +1,6 @@
+cpu: Intel i7-14700
+l1i_cache: 768 KiB (20)
+l1d_cache: 1 MiB (20)
+l2_cache: 28 MiB (11)
+l3_cache: 33 MiB (1)
+compiler_flags: -g
