@@ -102,8 +102,8 @@ def main() -> None:
     global VECTORS, METADATA #Added this as an issue was faced where these variables weren't updating globally causing issues
     VECTORS, METADATA = load_db()
 
-    print("Loaded VECTORS shape:", VECTORS.shape)
-    print("Loaded METADATA entries:", len(METADATA)) #Added these two print statments just to check
+    # print("Loaded VECTORS shape:", VECTORS.shape)
+    # print("Loaded METADATA entries:", len(METADATA)) # Added these two print statments just to check
     # Obtain user prompt
     # user_prompt = "Generate a efficient merge sort implementation for a modern Intel CPU."
     user_prompt = input("Enter your optimization request: ") # Added this and commented out the other user prompt, can comment this and uncomment the other if needed
