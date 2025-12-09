@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#define MAX_N     10000      /* maximum number of input integers */
+#define MAX_N     2000001    /* maximum number of input integers */
 #define MAX_VALUE 10000      /* maximum value of each integer    */
 
 int main(void) {
