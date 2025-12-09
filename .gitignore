@@ -4,6 +4,7 @@ Project_CodeNet/
 experiments/
 embedded/
 inputs/
+data/
 test/
 out/
 benchmark_out.txt
