@@ -1,6 +1,5 @@
 import json
 import numpy as np
-import traceback #added to catch error
 from openai import OpenAI
 from numpy.typing import NDArray
 
@@ -9,8 +8,8 @@ client = OpenAI()
 
 # Global variables
 TOP_K = 3
+MODEL ="gpt-5.1"
 DB_DIR = "embedded"
-MODEL ="gpt-5-mini"
 EMBED_MODEL = "text-embedding-3-small"
 
 # Typedefs
@@ -50,9 +49,10 @@ def cosine_similarity(a: Vector, b: Vector) -> float:
 
 
 def query_vector_db(text_query: str, top_k: int = 5) -> list[Score]:
-    # Added to give a better description of an error with the nothing in the database
+    # Verify the database is loaded
     if VECTORS is None or METADATA is None:
         raise RuntimeError("Vector DB not loaded")
+
     # Embed the query
     q_vec: Vector = embed_query(text_query)
 
@@ -75,7 +75,7 @@ def build_prompt(prompt: str, retrieved: list[Score]) -> str:
         md: Entry = entry[1]
         context.append(
             "\n".join([
-                f"## Retrieved Optimal Implementation #{idx}",
+                f"## Retrieved Implementation #{idx}",
                 f"### Algorithm: {md['algorithm']}",
                 f"### C Code:\n```c\n{md['code']}\n```"
             ])
@@ -84,29 +84,32 @@ def build_prompt(prompt: str, retrieved: list[Score]) -> str:
     # Join the context with the prompt
     return "\n".join([
         "# Task:"
-        "You are a systems-level code optimizer.",
+        "You are a code generator designed to produce correct, high-quality code",
         "",
         f"The user wants: '{prompt.strip()}'",
         "",
-        "Use the retrieved optimized implementations to inspire a new solution.",
+        "Use the retrieved implementations to inspire a new solution.",
         "Do not copy them directly; adapt them to the user's requirements.",
-        "Focus on cache efficiency and architecture-aware tuning.",
+        "Optimize details such as unnecessary allocations and redundant loop checks.",
+        "Above all, ensure that the code is correct, standard, and error free.",
+        "You may assume a standard linux environment.",
         "",
-        "Now generate an optimized C implementation with the following retrieved optimized implementations:"
+        "Now generate a standard, efficient C implementation with the following retrieved implementations:"
         f"{"\n".join(context)}",
     ])
 
 
 def main() -> None:
     # Load the vector database
-    global VECTORS, METADATA #Added this as an issue was faced where these variables weren't updating globally causing issues
+    global VECTORS, METADATA
     VECTORS, METADATA = load_db()
 
     # print("Loaded VECTORS shape:", VECTORS.shape)
-    # print("Loaded METADATA entries:", len(METADATA)) # Added these two print statments just to check
+    # print("Loaded METADATA entries:", len(METADATA))
+
     # Obtain user prompt
-    # user_prompt = "Generate a efficient merge sort implementation for a modern Intel CPU."
-    user_prompt = input("Enter your optimization request: ") # Added this and commented out the other user prompt, can comment this and uncomment the other if needed
+    user_prompt = input("Enter your optimization request: ")
+
     try:
         # Query RAG system and build prompt
         retrieved: list[Score] = query_vector_db(user_prompt, top_k=TOP_K)
@@ -120,7 +123,7 @@ def main() -> None:
         print(response.output_text)
     except Exception as e:
         print(f"Error: {e}")
-        traceback.print_exc() # added to catch error
+
 
 if __name__ == "__main__":
     main()
